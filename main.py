@@ -129,23 +129,23 @@ async def perform_analysis(analysis_id: str, request: CodebaseAnalysisRequest):
         analysis_results[analysis_id]["progress"] = 20
         analysis_results[analysis_id]["message"] = "Analyzing codebase structure..."
         
-        codebase_data = await codebase_analyzer.analyze_codebase(
-            request.source, 
-            request.input_type
-        )
+        codebase_data = await codebase_analyzer.analyze_codebase(request)
         
-        # Step 2: Generate documentation
-        analysis_results[analysis_id]["progress"] = 50
-        analysis_results[analysis_id]["message"] = "Generating AI documentation..."
+        # Step 2: Generate documentation (conditional based on request)
+        documentation = {"overview": "", "files": {}}
+        if request.include_documentation:
+            analysis_results[analysis_id]["progress"] = 50
+            analysis_results[analysis_id]["message"] = "Generating AI documentation..."
+            documentation = await ai_doc_service.generate_documentation(codebase_data)
         
-        documentation = await ai_doc_service.generate_documentation(codebase_data)
-        
-        # Step 3: Generate diagrams
-        analysis_results[analysis_id]["progress"] = 80
-        analysis_results[analysis_id]["message"] = "Creating sequence and class diagrams..."
-        
-        sequence_diagram = await ai_doc_service.generate_sequence_diagram(codebase_data)
-        class_diagram = await ai_doc_service.generate_class_diagram(codebase_data)
+        # Step 3: Generate diagrams (conditional based on request)
+        sequence_diagram = None
+        class_diagram = None
+        if request.include_diagrams:
+            analysis_results[analysis_id]["progress"] = 80
+            analysis_results[analysis_id]["message"] = "Creating sequence and class diagrams..."
+            sequence_diagram = await ai_doc_service.generate_sequence_diagram(codebase_data)
+            class_diagram = await ai_doc_service.generate_class_diagram(codebase_data)
         
         # Complete analysis
         analysis_results[analysis_id] = {

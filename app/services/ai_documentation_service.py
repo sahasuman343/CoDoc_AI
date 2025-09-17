@@ -11,8 +11,8 @@ class AIDocumentationService:
     
     def __init__(self):
         self.groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-        # Using GROQ's fastest model for code analysis
-        self.model = "llama-3.1-70b-versatile"
+        # Using GROQ's fastest available model for code analysis
+        self.model = "llama-3.1-8b-instant"
     
     async def generate_documentation(self, codebase_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate comprehensive documentation for the codebase"""
@@ -35,27 +35,41 @@ class AIDocumentationService:
             raise
     
     async def _generate_project_overview(self, codebase_data: Dict[str, Any]) -> str:
-        """Generate high-level project overview"""
+        """Generate high-level project overview using actual code analysis"""
         structure = codebase_data['structure']
         technologies = codebase_data['technologies']
+        code_analysis = codebase_data.get('code_analysis', {})
+        
+        # Extract actual code documentation from files
+        documented_files = [f for f in structure.files if f.documentation]
+        code_summaries = "\n".join([f.documentation for f in documented_files[:10]])
         
         prompt = f"""
-        Analyze this codebase and provide a comprehensive project overview:
+        Analyze this codebase and provide a comprehensive project overview based on actual code content:
         
         Project: {structure.name}
         Total Files: {structure.total_files}
         Total Lines of Code: {structure.total_lines}
         Technologies: {', '.join(technologies)}
         
-        File Structure:
-        {self._format_file_structure(structure)}
+        Code Analysis Summary:
+        - Total Classes: {code_analysis.get('total_classes', 0)}
+        - Total Functions: {code_analysis.get('total_functions', 0)}
+        - Total Imports: {code_analysis.get('total_imports', 0)}
         
-        Please provide:
-        1. Project purpose and functionality
-        2. Architecture overview
-        3. Key components and their roles
-        4. Technology stack analysis
-        5. Development patterns used
+        File Structure & Code Content:
+        {self._format_file_structure_with_code(structure, documented_files)}
+        
+        Actual Code Structure Analysis:
+        {code_summaries}
+        
+        Based on this ACTUAL CODE CONTENT analysis, provide:
+        1. Project purpose and functionality (inferred from actual code structure)
+        2. Architecture overview (based on classes, modules, and dependencies)
+        3. Key components and their roles (from actual classes and functions)
+        4. Technology stack analysis (from imports and file types)
+        5. Development patterns used (from code structure)
+        6. Main data flow and interactions (from function calls and imports)
         
         Format your response as a well-structured markdown document.
         """
@@ -69,22 +83,27 @@ class AIDocumentationService:
         return response.choices[0].message.content or ""
     
     async def _generate_file_documentation(self, codebase_data: Dict[str, Any]) -> Dict[str, str]:
-        """Generate documentation for individual files"""
+        """Generate documentation for individual files using actual code content"""
         structure = codebase_data['structure']
         file_docs = {}
         
-        # Group files by language for batch processing
-        files_by_language = {}
+        # First, use pre-parsed documentation for files that have it
         for file_info in structure.files:
+            if file_info.documentation:
+                file_docs[file_info.path] = file_info.documentation
+        
+        # For files without documentation, generate basic summaries
+        undocumented_files = [f for f in structure.files if not f.documentation and f.language != 'unknown']
+        
+        # Group undocumented files by language for batch processing
+        files_by_language = {}
+        for file_info in undocumented_files:
             if file_info.language not in files_by_language:
                 files_by_language[file_info.language] = []
             files_by_language[file_info.language].append(file_info)
         
-        # Generate documentation for each language group
+        # Generate documentation for undocumented files
         for language, files in files_by_language.items():
-            if language == 'unknown':
-                continue
-                
             # Process files in batches of 10
             for i in range(0, len(files), 10):
                 batch = files[i:i+10]
@@ -171,27 +190,40 @@ class AIDocumentationService:
             return "sequenceDiagram\n    participant User\n    participant System\n    User->>System: Request\n    System-->>User: Response"
     
     async def generate_class_diagram(self, codebase_data: Dict[str, Any]) -> str:
-        """Generate class diagram using Mermaid syntax"""
+        """Generate class diagram using actual parsed code structure"""
         logger.info("Generating class diagram")
         
         structure = codebase_data['structure']
         technologies = codebase_data['technologies']
+        code_analysis = codebase_data.get('code_analysis', {})
         
-        # Focus on object-oriented languages
-        oo_files = [f for f in structure.files if f.language in ['python', 'java', 'javascript', 'typescript', 'cpp', 'csharp']]
+        # Focus on object-oriented languages with actual code structure
+        oo_files = [f for f in structure.files if f.language in ['python', 'java', 'javascript', 'typescript', 'cpp', 'csharp'] and f.documentation]
+        
+        # Extract actual class information from documented files
+        actual_classes = []
+        for file_info in oo_files:
+            if 'Classes' in file_info.documentation:
+                actual_classes.append(f"From {file_info.path}: {file_info.documentation}")
+        
+        classes_info = "\n".join(actual_classes[:10])  # Limit to prevent token overflow
         
         prompt = f"""
-        Based on this codebase analysis, create a class diagram that shows the main classes and their relationships:
+        Based on ACTUAL PARSED CODE STRUCTURE, create a class diagram that shows the main classes and their relationships:
         
         Project: {structure.name}
-        Object-Oriented Files: {', '.join([f.path for f in oo_files[:15]])}
+        Total Classes Found: {code_analysis.get('total_classes', 0)}
+        Object-Oriented Files: {len(oo_files)}
         Technologies: {', '.join(technologies)}
         
-        Generate a Mermaid class diagram that shows:
-        1. Main classes/entities
-        2. Class relationships (inheritance, composition, association)
-        3. Key methods and properties
-        4. Interfaces (if applicable)
+        ACTUAL CLASS STRUCTURE (parsed from code):
+        {classes_info}
+        
+        Based on this REAL CODE ANALYSIS, generate a Mermaid class diagram that shows:
+        1. Actual classes found in the code (with their real names)
+        2. Class relationships (inferred from imports and usage)
+        3. Key methods found in the code
+        4. Inheritance patterns (if detected)
         
         Return only the Mermaid class diagram syntax, starting with:
         classDiagram
@@ -230,5 +262,33 @@ class AIDocumentationService:
             lines.append(f"\n{lang.upper()} files:")
             for file_info in files[:10]:  # Limit files per language
                 lines.append(f"  📄 {file_info.path} ({file_info.lines} lines)")
+        
+        return "\n".join(lines)
+    
+    def _format_file_structure_with_code(self, structure, documented_files) -> str:
+        """Format file structure including actual code content"""
+        lines = []
+        
+        # Add directories
+        for directory in structure.directories[:15]:  # Limit to prevent token overflow
+            lines.append(f"📁 {directory}/")
+        
+        # Add files with actual code content
+        files_by_lang = {}
+        for file_info in structure.files:
+            lang = file_info.language or 'other'
+            if lang not in files_by_lang:
+                files_by_lang[lang] = []
+            files_by_lang[lang].append(file_info)
+        
+        for lang, files in files_by_lang.items():
+            lines.append(f"\n{lang.upper()} files:")
+            for file_info in files[:8]:  # Reduced limit to prevent token overflow
+                if file_info in documented_files and file_info.documentation:
+                    # Show actual code structure
+                    lines.append(f"  📄 {file_info.path} ({file_info.lines} lines)")
+                    lines.append(f"    {file_info.documentation[:200]}...")
+                else:
+                    lines.append(f"  📄 {file_info.path} ({file_info.lines} lines)")
         
         return "\n".join(lines)
