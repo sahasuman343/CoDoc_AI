@@ -1,0 +1,17 @@
+[project]
+name = "repl-nix-workspace"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.11"
+dependencies = [
+    "asyncio>=4.0.0",
+    "fastapi>=0.116.2",
+    "gitpython>=3.1.45",
+    "openai>=1.107.3",
+    "pydantic>=2.11.9",
+    "requests>=2.32.5",
+    "tree-sitter>=0.25.1",
+    "tree-sitter-javascript>=0.25.0",
+    "tree-sitter-python>=0.25.0",
+    "uvicorn>=0.35.0",
+]
