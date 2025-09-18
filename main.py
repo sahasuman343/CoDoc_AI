@@ -168,6 +168,9 @@ async def perform_analysis(analysis_id: str, request: CodebaseAnalysisRequest):
         }
         
         logger.info(f"Analysis {analysis_id} completed successfully")
+        print(sequence_diagram)
+        print("----------------")
+        print(class_diagram)
         
     except Exception as e:
         logger.error(f"Analysis {analysis_id} failed: {str(e)}")
@@ -183,7 +186,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=5000,
+        port=8000,
         reload=True,
         log_level="info"
     )

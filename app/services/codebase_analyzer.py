@@ -1,4 +1,5 @@
 import os
+import subprocess
 import git
 import tempfile
 import shutil
@@ -93,7 +94,9 @@ class CodebaseAnalyzer:
         try:
             logger.info(f"Cloning repository: {request.source}")
             # Clone the repository
-            repo = git.Repo.clone_from(request.source, temp_dir)
+            # repo = git.Repo.clone_from(request.source, temp_dir)
+            subprocess.run(["git", "clone", "--depth", "1", request.source, temp_dir], check=True)
+            logger.info(f"Repository cloned to {temp_dir}")
             
             # Analyze the cloned repository
             result = await self._analyze_directory(temp_dir, request)
@@ -124,6 +127,7 @@ class CodebaseAnalyzer:
             os.path.realpath('/home'),       # User home directories
             os.path.realpath('/tmp'),        # Temporary directory
             os.path.realpath('./'),          # Current working directory
+            os.path.realpath('/private/var/folders')  # macOS temporary folders
         ]
         
         # Validate path using proper path comparison (not string matching)

@@ -1,8 +1,13 @@
 import os
 import json
+import re
 from typing import Dict, Any, List
 from groq import Groq
 from app.utils.logger import setup_logger
+from dotenv import load_dotenv  # Import dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = setup_logger(__name__)
 
@@ -10,9 +15,10 @@ class AIDocumentationService:
     """Service for generating AI-powered documentation and diagrams"""
     
     def __init__(self):
-        self.groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        # Fetch GROQ_API_KEY from environment variables
+        self.groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         # Using GROQ's fastest available model for code analysis
-        self.model = "llama-3.1-8b-instant"
+        self.model = "llama-3.3-70b-versatile"
     
     async def generate_documentation(self, codebase_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate comprehensive documentation for the codebase"""
@@ -182,8 +188,16 @@ class AIDocumentationService:
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3
             )
+
+            if response.choices[0].message.content:
+                content = response.choices[0].message.content
+                # Extract content inside ```mermaid ... ```
+                match = re.search(r"```mermaid\s*([\s\S]*?)```", content)
+                if match:
+                    mermaid_code = match.group(1).strip()
+                    # print(mermaid_code)
             
-            return response.choices[0].message.content or "sequenceDiagram\n    participant User\n    participant System\n    User->>System: Request\n    System-->>User: Response"
+            return mermaid_code or "sequenceDiagram\n    participant User\n    participant System\n    User->>System: Request\n    System-->>User: Response"
             
         except Exception as e:
             logger.error(f"Error generating sequence diagram: {str(e)}")
@@ -235,11 +249,23 @@ class AIDocumentationService:
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3
             )
-            
-            return response.choices[0].message.content or "classDiagram\n    class MainClass {\n        +method()\n    }"
-            
+
+            # Initialize mermaid_code with a default value
+            mermaid_code = "classDiagram\n    class MainClass {\n        +method()\n    }"
+
+            # Check if the response contains valid content
+            if response and response.choices and response.choices[0].message.content:
+                content = response.choices[0].message.content
+                # Extract content inside ```mermaid ... ```
+                match = re.search(r"```mermaid\s*([\s\S]*?)```", content)
+                if match:
+                    mermaid_code = match.group(1).strip()
+
+            return mermaid_code
+
         except Exception as e:
             logger.error(f"Error generating class diagram: {str(e)}")
+            # Return default class diagram in case of an error
             return "classDiagram\n    class MainClass {\n        +method()\n    }"
     
     def _format_file_structure(self, structure) -> str:
