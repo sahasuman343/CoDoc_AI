@@ -1,4 +1,4 @@
-# Codebase Documentation Generator
+# **CoDoc AI**: An AI powered Documentation Generator
 
 ## Overview
 
