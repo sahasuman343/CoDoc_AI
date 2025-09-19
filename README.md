@@ -2,65 +2,56 @@
 
 ## Overview
 
-This is a production-ready AI-powered codebase analysis and documentation generation service built with FastAPI. The application analyzes code repositories (from GitHub URLs or local paths) and generates comprehensive documentation including project overviews, file-specific documentation, sequence diagrams, and class diagrams. It leverages tree-sitter for actual code parsing and GROQ's fast AI API for intelligent documentation generation.
+An AI-powered tool for analyzing codebases and generating documentation, including project overviews, file-specific details, and visual diagrams (sequence and class diagrams). It supports multiple programming languages and integrates with GitHub repositories or local directories.
 
-**Key Features:**
-- **Real Code Analysis**: Uses tree-sitter to parse and extract classes, functions, imports, and dependencies from actual source code
-- **AI-Powered Documentation**: Generates meaningful documentation based on parsed code content using GROQ's fast inference
-- **Visual Diagrams**: Creates sequence diagrams and class diagrams in Mermaid format based on actual code structure
-- **Flexible Input**: Supports both GitHub repository URLs and local directory paths
-- **Production Security**: Comprehensive path validation and symlink protection for safe local directory analysis
-- **Configurable Analysis**: Respects user parameters like max_files, include_diagrams, include_documentation
+## Key Features
+- **Code Parsing**: Uses tree-sitter to extract classes, functions, imports, and dependencies.
+- **AI-Generated Documentation**: Leverages GROQ API for intelligent, context-aware documentation.
+- **Visual Diagrams**: Generates Mermaid-based sequence and class diagrams.
+- **Flexible Input**: Accepts GitHub URLs or local paths.
+- **Secure Analysis**: Validates paths and protects against symlink attacks.
+- **Configurable**: Supports parameters like `max_files`, `include_diagrams`, and `include_documentation`.
 
-## User Preferences
+## Setup and Run
 
-Preferred communication style: Simple, everyday language.
+### Prerequisites
+- Python 3.8+
+- GROQ API Key (set as `GROQ_API_KEY` environment variable)
 
-## System Architecture
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone <repository_url>
+   cd Codebase_doc_maker
+   ```
+2. Set up a virtual environment:
+   ```bash
+   uv venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+3. Install dependencies:
+   ```bash
+      uv sync
+   ```
 
-### Backend Framework
-- **FastAPI**: Chosen for its modern async support, automatic API documentation, and strong type validation with Pydantic models
-- **Async/Await Pattern**: Enables concurrent processing of multiple analysis requests without blocking
+### Running the Application
+1. Start the FastAPI server:
+   ```bash
+   python main.py
+   ```
+2. Access the API documentation at `http://127.0.0.1:8000/docs`.
 
-### Code Analysis Engine
-- **Tree-sitter Parsers**: Used for accurate syntax parsing of multiple programming languages (Python, JavaScript, TypeScript, Java, C++, etc.)
-- **Multi-language Support**: Extensible language detection and parsing system supporting 15+ programming languages
-- **Git Integration**: Direct GitHub repository cloning for remote codebase analysis
+3. Start the frontend:
+    ```bash
+    streamlit run app.py
+    ```
 
-### AI Documentation Service
-- **GROQ API Integration**: Uses llama-3.1-8b-instant model for fast, intelligent code documentation generation
-- **Contextual Analysis**: Generates project overviews and file-specific documentation based on actual code content rather than generic templates
-
-### Data Models
-- **Pydantic Models**: Strong type validation for API requests and responses
-- **Structured Analysis Results**: Organized data models for file information, project structure, and analysis responses
-
-### Request Processing
-- **Background Tasks**: Long-running analysis operations handled asynchronously
-- **In-memory Storage**: Analysis results stored temporarily (designed for database integration in production)
-- **Status Tracking**: RESTful endpoints for checking analysis progress and retrieving results
-
-### Error Handling and Logging
-- **Structured Logging**: Consistent logging across all services with timestamp and level formatting
-- **Exception Management**: Comprehensive error handling with detailed logging for debugging
 
 ## External Dependencies
+- **AI Services**: GROQ API for documentation generation.
+- **Code Analysis**: tree-sitter for syntax parsing, GitPython for repository operations.
+- **Web Framework**: FastAPI with Uvicorn.
 
-### AI Services
-- **GROQ API**: Primary AI service for code analysis and documentation generation (requires GROQ_API_KEY environment variable)
-
-### Code Analysis Libraries
-- **tree-sitter-python**: Python syntax parsing
-- **tree-sitter-javascript**: JavaScript/TypeScript syntax parsing
-- **GitPython**: Git repository operations and cloning
-
-### Web Framework
-- **FastAPI**: Core web framework with built-in validation and documentation
-- **Uvicorn**: ASGI server for running the FastAPI application
-- **CORS Middleware**: Cross-origin resource sharing support for frontend integration
-
-### Development Tools
-- **Pydantic**: Data validation and serialization
-- **Python Standard Library**: File system operations, logging, and async operations
-
-The architecture is designed to be modular and extensible, with clear separation between code analysis, AI documentation generation, and API handling components.
+## Notes
+- Results are stored in-memory; database integration is planned for production.
+- Ensure `GROQ_API_KEY` is set in your environment before running the application.

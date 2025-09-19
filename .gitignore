@@ -6,3 +6,6 @@ __pycache__/
 instance
 migrations/ 
 .replit
+.DS_Store
+.vscode/
+.idea/
